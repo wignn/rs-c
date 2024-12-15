@@ -87,6 +87,11 @@ fn handle_client(mut stream: TcpStream) {
 
 
 
+fn handle_post_request(request: &str)->(String, String){
+    macth (get_user_request_body(&request), Client::connect(DATABASE_URL)
+)
+}
+
 
 fn get_id(request: &str)->&str{
     request.split("/").nth(2).unwrap_or_default().split_whitespace().next().unwrap_or_default()
