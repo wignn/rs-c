@@ -94,15 +94,31 @@ fn handle_post_request(request: &str) -> (String, String) {
                 "INSERT INTO users (name, email) VALUES ($1, $2)",
                 &[&user.name, &user.email],
             ).unwarp();
-            match result {
-                Ok(_) => (OK_RESPONSE.to_string(), "User created".to_string()),
-                Err(_) => (INTERNAL_SERVER_ERROR_RESPONSE.to_string(), "Failed to create user".to_string()),
-            }
+            (OK_RESPONSE.to_string(), "User created".to_string())
         }
         _ => (INTERNAL_SERVER_ERROR_RESPONSE.to_string(), "Failed to parse request or connect to database".to_string()),
     }
 }
 
+fn handle_get_request(request: &str) -> (String, String) {
+    match (get_id(&request).parse::<i32>(), Client::connect(DB_URL, NoTls)) {
+        (Ok(id), Ok(mut client)) =>
+            match client.query_one("SELECT * FROM users WHERE id = $1", &[&id]) {
+                Ok(row) => {
+                    let user = User {
+                        id: row.get(0),
+                        name: row.get(1),
+                        email: row.get(2),
+                    };
+
+                    (OK_RESPONSE.to_string(), serde_json::to_string(&user).unwrap())
+                }
+                _ => (NOT_FOUND.to_string(), "User not found".to_string()),
+            }
+
+        _ => (INTERNAL_SERVER_ERROR.to_string(), "Error".to_string()),
+    }
+}
 
 fn get_id(request: &str)->&str{
     request.split("/").nth(2).unwrap_or_default().split_whitespace().next().unwrap_or_default()
