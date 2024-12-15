@@ -87,9 +87,20 @@ fn handle_client(mut stream: TcpStream) {
 
 
 
-fn handle_post_request(request: &str)->(String, String){
-    macth (get_user_request_body(&request), Client::connect(DATABASE_URL)
-)
+fn handle_post_request(request: &str) -> (String, String) {
+    match (get_user_request_body(&request), Client::connect(DATABASE_URL, NoTls)) {
+        (Ok(user), Ok(mut client)) => {
+            let result = client.execute(
+                "INSERT INTO users (name, email) VALUES ($1, $2)",
+                &[&user.name, &user.email],
+            ).unwarp();
+            match result {
+                Ok(_) => (OK_RESPONSE.to_string(), "User created".to_string()),
+                Err(_) => (INTERNAL_SERVER_ERROR_RESPONSE.to_string(), "Failed to create user".to_string()),
+            }
+        }
+        _ => (INTERNAL_SERVER_ERROR_RESPONSE.to_string(), "Failed to parse request or connect to database".to_string()),
+    }
 }
 
 
